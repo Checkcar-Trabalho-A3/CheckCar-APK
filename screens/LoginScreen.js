@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, StyleSheet, Image, TextInput, TouchableOpacity, Text } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { useFonts, Outfit_300Light } from '@expo-google-fonts/outfit';
 
-export default function LoginScreen() {
+export default function LoginScreen({navigation}) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
 
@@ -73,7 +75,7 @@ export default function LoginScreen() {
         />
 
         {/* Botões */}
-        <TouchableOpacity style={styles.loginButton} onPress={() => console.log('Fazer login')}>
+        <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Home')}>
           <Text style={styles.loginButtonText}>Entrar</Text>
         </TouchableOpacity>
 
