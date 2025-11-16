@@ -15,7 +15,7 @@ export default function MenuChecklistScreen({ navigation }) {
 
   const continuar = () => {
     setModalVisible(false);
-    navigation.navigate('ChecklistScreen', { tipo: tipoSelecionado, placa });
+    navigation.navigate('Checklist', { tipo: tipoSelecionado, placa });
   };
 
   const [fontsLoaded] = useFonts({
