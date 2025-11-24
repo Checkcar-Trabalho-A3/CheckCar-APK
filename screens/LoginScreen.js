@@ -11,7 +11,7 @@ export default function LoginScreen({navigation}) {
   const handleLogin = async () => {
   console.log('Botão de login clicado');
   try {
-    const response = await fetch('http://192.168.18.126:8080/api/usuarios/login', {
+    const response = await fetch('http://192.168.18.25:8080/api/usuarios/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ cpf, senha })
@@ -20,7 +20,7 @@ export default function LoginScreen({navigation}) {
     if (!response.ok) throw new Error('CPF ou senha inválidos');
 
     const usuario = await response.json();
-    navigation.navigate('Home', { usuario });
+    navigation.navigate('Home', { usuarioLogado: usuario });
   } catch (err) {
     Alert.alert('Erro', err.message);
   }
