@@ -1,5 +1,3 @@
-### 📘 Documentação – Aplicativo de Checklist de Veículos
-
 ## 📱 Visão Geral
 O aplicativo CheckCar é uma solução mobile desenvolvida em React Native com backend em Spring Boot. Ele permite que usuários logados realizem checklists de veículos (carro, moto, caminhão), registrando respostas para perguntas pré-definidas e enviando os resultados para o servidor.
 
