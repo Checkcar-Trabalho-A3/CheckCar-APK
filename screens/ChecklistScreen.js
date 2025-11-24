@@ -50,14 +50,11 @@ export default function ChecklistScreen({ route, navigation }) {
         return;
       }
 
-      const idLote = Math.floor(Date.now() / 1000);
-
       const lotePayload = Object.entries(respostas).map(([idPergunta, resposta]) => {
         if (!idPergunta) {
           throw new Error("Pergunta sem ID detectada");
         }
         return {
-          idLote,
           idUsuario: usuarioId,
           idVeiculo: veiculoId,
           tipo: tipo.toUpperCase(),
