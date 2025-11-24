@@ -1,13 +1,30 @@
 import React, { useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Alert } from 'react-native';
 import { View, StyleSheet, Image, TextInput, TouchableOpacity, Text } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { useFonts, Outfit_300Light } from '@expo-google-fonts/outfit';
 
 export default function LoginScreen({navigation}) {
-  const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [cpf, setCpf] = useState('');
+
+  const handleLogin = async () => {
+  console.log('Botão de login clicado');
+  try {
+    const response = await fetch('http://192.168.18.25:8080/api/usuarios/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cpf, senha })
+    });
+
+    if (!response.ok) throw new Error('CPF ou senha inválidos');
+
+    const usuario = await response.json();
+    navigation.navigate('Home', { usuarioLogado: usuario });
+  } catch (err) {
+    Alert.alert('Erro', err.message);
+  }
+};
 
   const [fontsLoaded] = useFonts({
     Outfit_300Light,
@@ -58,11 +75,11 @@ export default function LoginScreen({navigation}) {
         {/* Inputs */}
         <TextInput
           style={styles.input}
-          placeholder="Digite seu e-mail"
+          placeholder="Digite seu CPF"
           placeholderTextColor="#ccc"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
+          value={cpf}
+          onChangeText={setCpf}
+          keyboardType="numeric"
           autoCapitalize="none"
         />
         <TextInput
@@ -75,7 +92,7 @@ export default function LoginScreen({navigation}) {
         />
 
         {/* Botões */}
-        <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Home')}>
+        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
           <Text style={styles.loginButtonText}>Entrar</Text>
         </TouchableOpacity>
 

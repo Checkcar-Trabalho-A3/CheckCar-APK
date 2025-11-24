@@ -5,7 +5,7 @@ export default function SummaryScreen({ route, navigation }) {
   const { respostas } = route.params;
 
   const enviarChecklist = () => {
-    // Aqui você faria a chamada POST para /respostas-checklist/lote
+  
     console.log('Checklist enviado:', respostas);
     navigation.navigate('Home');
   };
