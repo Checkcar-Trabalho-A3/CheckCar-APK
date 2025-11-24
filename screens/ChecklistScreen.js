@@ -3,23 +3,26 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert,
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 export default function ChecklistScreen({ route, navigation }) {
-  const { tipo, placa } = route.params;
+  const { tipo, placa, usuarioId, veiculoId } = route.params; 
+
+  console.log("ChecklistScreen params:", { tipo, placa, usuarioId, veiculoId });
+
   const [perguntas, setPerguntas] = useState([]);
   const [respostas, setRespostas] = useState({});
   const [carregandoPerguntas, setCarregandoPerguntas] = useState(true);
 
   useEffect(() => {
-    fetch(`http://192.168.18.126:8080/api/perguntas?tipoVeiculo=${tipo.toUpperCase()}`)
+    fetch(`http://192.168.18.25:8080/api/perguntas?tipoVeiculo=${tipo?.toUpperCase()}`)
       .then(res => {
         if (!res.ok) throw new Error('Erro ao buscar perguntas');
         return res.json();
       })
       .then(data => {
-        console.log('Perguntas recebidas:', data);
+        console.log('Perguntas recebidas do backend:', data);
         setPerguntas(Array.isArray(data) ? data : []);
       })
       .catch(err => {
-        console.error(err);
+        console.error("Erro ao carregar perguntas:", err);
         Alert.alert('Erro', 'Não foi possível carregar as perguntas');
       })
       .finally(() => setCarregandoPerguntas(false));
@@ -34,56 +37,68 @@ export default function ChecklistScreen({ route, navigation }) {
 
   const enviarChecklist = async () => {
     try {
-      const checklistResponse = await fetch('http://192.168.18.126:8080/api/checklist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ placa, tipoVeiculo: tipo.toUpperCase() })
+      if (!usuarioId || !veiculoId) {
+        Alert.alert("Erro", "Usuário ou veículo não definidos. Faça login e selecione um veículo.");
+        return;
+      }
+      if (!tipo || !placa) {
+        Alert.alert("Erro", "Tipo de veículo ou placa não informados.");
+        return;
+      }
+      if (Object.keys(respostas).length === 0) {
+        Alert.alert("Erro", "Nenhuma resposta foi preenchida.");
+        return;
+      }
+
+      const idLote = Math.floor(Date.now() / 1000);
+
+      const lotePayload = Object.entries(respostas).map(([idPergunta, resposta]) => {
+        if (!idPergunta) {
+          throw new Error("Pergunta sem ID detectada");
+        }
+        return {
+          idLote,
+          idUsuario: usuarioId,
+          idVeiculo: veiculoId,
+          tipo: tipo.toUpperCase(),
+          idPergunta: parseInt(idPergunta, 10),
+          observacao: resposta.observacao || "",
+          status: resposta.status || null
+        };
       });
 
-      if (!checklistResponse.ok) throw new Error('Falha ao criar checklist');
+  
+      console.log("Payload enviado ao backend:", JSON.stringify(lotePayload, null, 2));
 
-      const checklistCriado = await checklistResponse.json();
-      const idChecklist = checklistCriado.id_Checklist || checklistCriado.id;
-
-      const payload = {
-        idChecklist,
-        respostas: Object.entries(respostas).map(([idPergunta, resposta]) => ({
-          idPergunta: parseInt(idPergunta),
-          status: resposta.status,
-          observacao: resposta.observacao
-        }))
-      };
-
-      const respostaResponse = await fetch('http://192.168.18.126:8080/api/respostas-checklist', {
+      const respostaResponse = await fetch('http://192.168.18.25:8080/api/respostas-checklist/lote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(lotePayload)
       });
 
-      if (!respostaResponse.ok) throw new Error('Erro ao enviar respostas');
+  
+      console.log("Resposta do backend:", respostaResponse.status);
+      const respostaTexto = await respostaResponse.text();
+      console.log("Corpo da resposta:", respostaTexto);
+
+      if (!respostaResponse.ok) {
+        throw new Error(`Erro ao enviar respostas: ${respostaTexto}`);
+      }
 
       Alert.alert('Sucesso', 'Checklist enviado com sucesso');
       navigation.goBack();
     } catch (err) {
-      console.error(err);
+      console.error("Erro no envio do checklist:", err);
       Alert.alert('Erro', err.message || 'Falha ao enviar checklist');
     }
   };
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Fundo radial como primeiro filho */}
+      {/* Fundo radial */}
       <Svg height="100%" width="100%" style={[StyleSheet.absoluteFill, { zIndex: -1 }]}>
         <Defs>
-          <RadialGradient
-            id="grad"
-            cx="50%"
-            cy="50%"
-            rx="50%"
-            ry="50%"
-            fx="50%"
-            fy="50%"
-          >
+          <RadialGradient id="grad" cx="50%" cy="50%" rx="50%" ry="50%" fx="50%" fy="50%">
             <Stop offset="0%" stopColor="#474747" stopOpacity="1" />
             <Stop offset="100%" stopColor="#0F0F0F" stopOpacity="1" />
           </RadialGradient>
@@ -93,16 +108,8 @@ export default function ChecklistScreen({ route, navigation }) {
 
       {/* Imagens no topo */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginTop: 40 }}>
-        <Image
-          source={require('../assets/checklist.png')}
-          style={styles.checklist}
-          resizeMode="contain"
-        />
-        <Image
-          source={require('../assets/car.png')}
-          style={styles.carImage}
-          resizeMode="contain"
-        />
+        <Image source={require('../assets/checklist.png')} style={styles.checklist} resizeMode="contain" />
+        <Image source={require('../assets/car.png')} style={styles.carImage} resizeMode="contain" />
       </View>
 
       <ScrollView contentContainerStyle={styles.container}>
@@ -164,67 +171,16 @@ export default function ChecklistScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-  },
-  checklist: {
-    width: 180,
-    height: 30,
-    marginBottom: 20,
-    marginTop: 80,
-    right: -80,
-  },
-  carImage: {
-    width: 50,
-    height: 90,
-    marginLeft: 10,
-    right: 300,
-  },
-  perguntaBox: {
-    marginBottom: 25,
-    backgroundColor: 'transparent',
-    padding: 15,
-    borderRadius: 10,
-  },
-  pergunta: {
-    color: '#fff',
-    fontSize: 16,
-    marginBottom: 10,
-  },
-  opcoes: {
-    flexDirection: 'column',
-    gap: 10,
-  },
-  botao: {
-    backgroundColor: '#5A5A5A',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 5,
-  },
-  botaoSelecionado: {
-    backgroundColor: '#FF6B00',
-  },
-  botaoTexto: {
-    color: '#fff',
-    textAlign: 'center',
-  },
-  input: {
-    backgroundColor: '#5A5A5A',
-    color: '#fff',
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  enviarButton: {
-    backgroundColor: '#5A5A5A',
-    padding: 13,
-    borderRadius: 15,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  enviarTexto: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  container: { padding: 20 },
+  checklist: { width: 180, height: 30, marginBottom: 20, marginTop: 80, right: -80 },
+  carImage: { width: 50, height: 90, marginLeft: 10, right: 300 },
+  perguntaBox: { marginBottom: 25, backgroundColor: 'transparent', padding: 15, borderRadius: 10 },
+  pergunta: { color: '#fff', fontSize: 16, marginBottom: 10 },
+  opcoes: { flexDirection: 'column', gap: 10 },
+  botao: { backgroundColor: '#5A5A5A', padding: 10, borderRadius: 8, marginBottom: 5 },
+  botaoSelecionado: { backgroundColor: '#FF6B00' },
+  botaoTexto: { color: '#fff', textAlign: 'center' },
+  input: { backgroundColor: '#5A5A5A', color: '#fff', padding: 10, borderRadius: 8, marginTop: 10 },
+  enviarButton: { backgroundColor: '#5A5A5A', padding: 13, borderRadius: 15, alignItems: 'center', marginTop: 10 },
+  enviarTexto: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });
