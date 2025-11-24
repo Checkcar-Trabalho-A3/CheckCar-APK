@@ -74,7 +74,7 @@ id
 
 - nome
 
-email
+- email
 
 - Veiculo
 id
